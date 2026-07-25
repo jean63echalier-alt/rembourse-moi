@@ -1,28 +1,27 @@
+import * as Haptics from 'expo-haptics';
 import { useState } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Plus, UserPlus } from 'lucide-react-native';
 
-import { familyMembers as initialFamilyMembers } from '@/data/mockData';
-import type { FamilyMember } from '@/types';
+import { useReimbursements } from '@/context/ReimbursementContext';
 
 export default function FamilyScreen() {
-  const [members, setMembers] = useState<FamilyMember[]>(initialFamilyMembers);
+  const { familyMembers: members, addFamilyMember } = useReimbursements();
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState('');
   const [contractNumber, setContractNumber] = useState('');
 
   function addMember() {
     if (!name.trim()) return;
-    const newMember: FamilyMember = {
-      id: `member-${Date.now()}`,
+    addFamilyMember({
       name: name.trim(),
       relation: 'parent',
       emoji: '🧑',
       mutuelle: 'Contrat à renseigner',
       contractNumber: contractNumber.trim() || '—',
-    };
-    setMembers((prev) => [...prev, newMember]);
+    });
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setName('');
     setContractNumber('');
     setAdding(false);

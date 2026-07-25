@@ -1,22 +1,47 @@
-import { useState } from 'react';
+import { CameraView, useCameraPermissions } from 'expo-camera';
+import * as Haptics from 'expo-haptics';
+import { useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { CheckCircle2, FileText, ScanLine } from 'lucide-react-native';
+import { CameraIcon, CheckCircle2, FileText } from 'lucide-react-native';
 
+import { useProfile } from '@/context/ProfileContext';
+import { useReimbursements } from '@/context/ReimbursementContext';
 import { mockScanResult } from '@/data/mockData';
 
-type ScanState = 'idle' | 'scanning' | 'result' | 'sent';
+type ScanState = 'camera' | 'scanning' | 'result' | 'sent';
 
 export default function ScanScreen() {
-  const [state, setState] = useState<ScanState>('idle');
+  const [state, setState] = useState<ScanState>('camera');
+  const [permission, requestPermission] = useCameraPermissions();
+  const cameraRef = useRef<CameraView>(null);
+  const { profile } = useProfile();
+  const { addReimbursement } = useReimbursements();
 
-  function simulateScan() {
+  async function capture() {
+    if (!cameraRef.current) return;
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    await cameraRef.current.takePictureAsync({ quality: 0.5 });
     setState('scanning');
     setTimeout(() => setState('result'), 1800);
   }
 
   function reset() {
-    setState('idle');
+    setState('camera');
+  }
+
+  async function sendToMutuelle() {
+    addReimbursement({
+      profileId: profile.id,
+      provider: mockScanResult.provider,
+      category: mockScanResult.category,
+      amount: mockScanResult.amount,
+      reimbursedAmount: mockScanResult.estimatedReimbursement,
+      status: 'pending',
+      date: new Date().toISOString().slice(0, 10),
+    });
+    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setState('sent');
   }
 
   return (
@@ -28,23 +53,46 @@ export default function ScanScreen() {
       >
         <Text className="text-2xl font-bold text-neutral-900 mt-4 mb-6">Scanner une facture</Text>
 
-        {state === 'idle' && (
+        {state === 'camera' && (
           <>
-            <View className="rounded-xl2 border-2 border-dashed border-neutral-300 bg-white items-center justify-center py-16 mb-6">
-              <ScanLine color="#9CA3AF" size={40} />
-              <Text className="text-neutral-500 text-sm mt-3 px-8 text-center">
-                Prenez une photo ou glissez-déposez votre facture ici
-              </Text>
-            </View>
+            {!permission ? (
+              <View className="items-center justify-center py-24">
+                <ActivityIndicator size="large" color="#18AE8F" />
+              </View>
+            ) : !permission.granted ? (
+              <View className="rounded-xl2 border-2 border-dashed border-neutral-300 bg-white items-center justify-center py-16 mb-6 px-8">
+                <CameraIcon color="#9CA3AF" size={40} />
+                <Text className="text-neutral-500 text-sm mt-3 mb-5 text-center">
+                  L&apos;accès à la caméra est nécessaire pour scanner vos factures.
+                </Text>
+                <Pressable
+                  onPress={requestPermission}
+                  className="rounded-xl2 bg-primary-500 px-6 py-3 active:bg-primary-600"
+                >
+                  <Text className="text-white font-bold">Autoriser la caméra</Text>
+                </Pressable>
+              </View>
+            ) : (
+              <>
+                <View className="rounded-xl2 overflow-hidden mb-6 bg-black" style={{ height: 420 }}>
+                  <CameraView ref={cameraRef} style={{ flex: 1 }} facing="back">
+                    <View className="flex-1 items-center justify-center px-8">
+                      <View className="w-full aspect-[3/4] max-h-full border-2 border-white/80 rounded-2xl border-dashed" />
+                      <Text className="text-white text-xs text-center mt-4 bg-black/40 px-3 py-1.5 rounded-full">
+                        Cadrez la facture dans le rectangle
+                      </Text>
+                    </View>
+                  </CameraView>
+                </View>
 
-            <Pressable
-              onPress={simulateScan}
-              className="rounded-xl2 bg-primary-500 py-4 items-center active:bg-primary-600"
-            >
-              <Text className="text-white text-base font-bold">
-                Simuler le scan d&apos;une facture d&apos;ostéo (60€)
-              </Text>
-            </Pressable>
+                <Pressable
+                  onPress={capture}
+                  className="rounded-xl2 bg-primary-500 py-4 items-center active:bg-primary-600"
+                >
+                  <Text className="text-white text-base font-bold">📷 Prendre la photo</Text>
+                </Pressable>
+              </>
+            )}
           </>
         )}
 
@@ -88,7 +136,7 @@ export default function ScanScreen() {
             </View>
 
             <Pressable
-              onPress={() => setState('sent')}
+              onPress={sendToMutuelle}
               className="rounded-xl2 bg-primary-500 py-4 items-center mb-3 active:bg-primary-600"
             >
               <Text className="text-white text-base font-bold">

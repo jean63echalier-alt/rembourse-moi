@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 
 import { ProfileProvider } from '@/context/ProfileContext';
+import { ReimbursementProvider } from '@/context/ReimbursementContext';
 
 import '../global.css';
 
@@ -15,10 +16,12 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={DefaultTheme}>
       <ProfileProvider>
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        </Stack>
-        <StatusBar style="dark" />
+        <ReimbursementProvider>
+          <Stack>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          </Stack>
+          <StatusBar style="dark" />
+        </ReimbursementProvider>
       </ProfileProvider>
     </ThemeProvider>
   );

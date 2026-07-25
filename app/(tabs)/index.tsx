@@ -1,14 +1,22 @@
 import { router } from 'expo-router';
+import * as Haptics from 'expo-haptics';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ReimbursementCard } from '@/components/ReimbursementCard';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { useProfile } from '@/context/ProfileContext';
-import { medecineDouceBudget, recentReimbursements, yearlyRecovered } from '@/data/mockData';
+import { useReimbursements } from '@/context/ReimbursementContext';
+import { medecineDouceBudget, yearlyRecovered } from '@/data/mockData';
 
 export default function HomeScreen() {
   const { profile, profiles, setProfileId } = useProfile();
+  const { reimbursements } = useReimbursements();
+
+  function selectProfile(id: string) {
+    Haptics.selectionAsync();
+    setProfileId(id);
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-surface" edges={['top']}>
@@ -27,7 +35,7 @@ export default function HomeScreen() {
             return (
               <Pressable
                 key={p.id}
-                onPress={() => setProfileId(p.id)}
+                onPress={() => selectProfile(p.id)}
                 className={`mr-2.5 items-center justify-center w-14 h-14 rounded-full border-2 ${
                   active ? 'border-primary-500 bg-primary-50' : 'border-transparent bg-white'
                 }`}
@@ -61,7 +69,7 @@ export default function HomeScreen() {
         <Text className="text-base font-bold text-neutral-900 mb-3">
           Suivi des remboursements récents
         </Text>
-        {recentReimbursements.map((item) => (
+        {reimbursements.map((item) => (
           <ReimbursementCard key={item.id} item={item} />
         ))}
       </ScrollView>

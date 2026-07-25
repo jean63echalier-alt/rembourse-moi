@@ -38,6 +38,12 @@
             "backgroundColor": "#000000"
           }
         }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "RembourseMoi a besoin d'accéder à votre caméra pour scanner vos factures."
+        }
       ]
     ],
     "experiments": {
