@@ -14,6 +14,7 @@ interface ReimbursementContextValue {
   reimbursements: Reimbursement[];
   addReimbursement: (item: Omit<Reimbursement, 'id'>) => void;
   updateReimbursementStatus: (id: string, status: Reimbursement['status']) => void;
+  sendReminder: (id: string) => void;
 }
 
 const ReimbursementContext = createContext<ReimbursementContextValue | undefined>(undefined);
@@ -60,6 +61,10 @@ export function ReimbursementProvider({ children }: { children: React.ReactNode 
         setReimbursements((prev) => [{ ...item, id: `r-${Date.now()}` }, ...prev]),
       updateReimbursementStatus: (id, status) =>
         setReimbursements((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r))),
+      sendReminder: (id) =>
+        setReimbursements((prev) =>
+          prev.map((r) => (r.id === id ? { ...r, reminderSentAt: new Date().toISOString() } : r))
+        ),
     }),
     [familyMembers, reimbursements]
   );

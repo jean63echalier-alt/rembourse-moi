@@ -2,7 +2,7 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Haptics from 'expo-haptics';
 import * as MailComposer from 'expo-mail-composer';
 import * as Sharing from 'expo-sharing';
-import { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CameraIcon, CheckCircle2, FileText, Mail, Share2 } from 'lucide-react-native';
@@ -10,6 +10,7 @@ import { CameraIcon, CheckCircle2, FileText, Mail, Share2 } from 'lucide-react-n
 import { useProfile } from '@/context/ProfileContext';
 import { useReimbursements } from '@/context/ReimbursementContext';
 import { mockScanResult } from '@/data/mockData';
+import { estimateReimbursement } from '@/lib/reimbursementEngine';
 
 type ScanState = 'camera' | 'scanning' | 'result' | 'sent';
 
@@ -19,11 +20,22 @@ export default function ScanScreen() {
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const cameraRef = useRef<CameraView>(null);
   const { profile } = useProfile();
-  const { familyMembers, addReimbursement } = useReimbursements();
+  const { familyMembers, reimbursements, addReimbursement } = useReimbursements();
   const [selectedMemberId, setSelectedMemberId] = useState(profile.id);
 
   const selectedMember =
     familyMembers.find((m) => m.id === selectedMemberId) ?? familyMembers[0];
+
+  const estimate = useMemo(
+    () =>
+      estimateReimbursement(
+        mockScanResult.category,
+        mockScanResult.amount,
+        selectedMember,
+        reimbursements
+      ),
+    [selectedMember, reimbursements]
+  );
 
   async function capture() {
     if (!cameraRef.current) return;
@@ -46,7 +58,7 @@ export default function ScanScreen() {
       provider: mockScanResult.provider,
       category: mockScanResult.category,
       amount: mockScanResult.amount,
-      reimbursedAmount: mockScanResult.estimatedReimbursement,
+      reimbursedAmount: estimate.estimatedReimbursement,
       status: 'pending',
       date: new Date().toISOString().slice(0, 10),
     });
@@ -157,12 +169,25 @@ export default function ScanScreen() {
                   {mockScanResult.amount.toFixed(2)} €
                 </Text>
               </View>
+
               <View className="rounded-xl bg-primary-50 px-4 py-3 mt-2">
                 <Text className="text-xs text-primary-700 mb-0.5">
-                  Estimation remboursement mutuelle
+                  Estimation remboursement — {selectedMember.contract.insurerName}
+                  {estimate.guarantee ? ` (${estimate.reimbursementRate}%)` : ''}
                 </Text>
                 <Text className="text-xl font-extrabold text-primary-700">
-                  {mockScanResult.estimatedReimbursement.toFixed(2)} €
+                  {estimate.estimatedReimbursement.toFixed(2)} €
+                </Text>
+                {estimate.capReached && (
+                  <Text className="text-[11px] text-primary-600 mt-1">
+                    ⚠️ Plafond annuel de cette garantie atteint pour {selectedMember.name}.
+                  </Text>
+                )}
+              </View>
+              <View className="rounded-xl bg-neutral-50 px-4 py-3 mt-2.5">
+                <Text className="text-xs text-neutral-500 mb-0.5">Reste à charge estimé</Text>
+                <Text className="text-lg font-bold text-neutral-800">
+                  {estimate.resteACharge.toFixed(2)} €
                 </Text>
               </View>
             </View>
@@ -228,8 +253,8 @@ export default function ScanScreen() {
             </View>
             <Text className="text-lg font-bold text-neutral-900 mb-1">Envoyé à la mutuelle</Text>
             <Text className="text-sm text-neutral-500 text-center px-10 mb-6">
-              Votre demande de remboursement de {mockScanResult.estimatedReimbursement.toFixed(2)}{' '}
-              € est en cours de traitement.
+              Votre demande de remboursement de {estimate.estimatedReimbursement.toFixed(2)} € est
+              en cours de traitement.
             </Text>
             <Pressable
               onPress={reset}

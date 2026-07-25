@@ -26,14 +26,23 @@ const CONFIG: Record<
   },
 };
 
+const OVERDUE_CONFIG = {
+  emoji: '⏰',
+  label: () => 'Relance requise',
+  bg: 'bg-orange-50',
+  text: 'text-orange-700',
+};
+
 export function StatusBadge({
   status,
   amount,
+  overdue = false,
 }: {
   status: ReimbursementStatus;
   amount: number;
+  overdue?: boolean;
 }) {
-  const config = CONFIG[status];
+  const config = status === 'pending' && overdue ? OVERDUE_CONFIG : CONFIG[status];
 
   return (
     <View className={`flex-row items-center self-start rounded-full px-3 py-1 ${config.bg}`}>

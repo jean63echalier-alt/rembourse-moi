@@ -1,61 +1,55 @@
 import * as Haptics from 'expo-haptics';
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Sharing from 'expo-sharing';
-import { Building2, FileDown, Mail, Pencil, Shield } from 'lucide-react-native';
+import { Building2, FileDown, Landmark, Mail, Pencil, Shield } from 'lucide-react-native';
 
 import { MutuelleSelector, type MutuelleFields } from '@/components/MutuelleSelector';
-import { ProgressBar } from '@/components/ui/ProgressBar';
+import { GuaranteeProgress } from '@/components/mutuelle/GuaranteeProgress';
 import { AVAILABLE_BANKS, useBankSync } from '@/context/BankSyncContext';
 import { useProfile } from '@/context/ProfileContext';
 import { useReimbursements } from '@/context/ReimbursementContext';
-import { MEDECINE_DOUCE_CATEGORY, OPTIQUE_CATEGORY, mutuelle } from '@/data/mockData';
 import { generateReimbursementPdf } from '@/lib/generateReimbursementPdf';
 
 export default function ProfileScreen() {
   const { profile } = useProfile();
   const { familyMembers, updateFamilyMember, reimbursements, updateReimbursementStatus } =
     useReimbursements();
-  const ownReimbursedItems = reimbursements.filter(
-    (r) => r.profileId === profile.id && r.status === 'reimbursed'
-  );
-  const medecineDouceSeances = ownReimbursedItems.filter(
-    (r) => r.category === MEDECINE_DOUCE_CATEGORY
-  ).length;
-  const optiqueUsed = ownReimbursedItems
-    .filter((r) => r.category === OPTIQUE_CATEGORY)
-    .reduce((sum, r) => sum + r.reimbursedAmount, 0);
   const { isBankConnected, connectedBankName, connectBank, disconnectBank, checkAutomaticReimbursements } =
     useBankSync();
-  const selfMember = familyMembers.find((m) => m.id === profile.id);
+  const selfMember = familyMembers.find((m) => m.id === profile.id) ?? profile;
   const [editingMutuelle, setEditingMutuelle] = useState(false);
+  const [editingRib, setEditingRib] = useState(false);
+  const [rib, setRib] = useState(selfMember.rib);
   const [pickingBank, setPickingBank] = useState(false);
   const [syncBanner, setSyncBanner] = useState<string | null>(null);
   const [exportingPdf, setExportingPdf] = useState(false);
   const [mutuelleFields, setMutuelleFields] = useState<MutuelleFields>({
-    mutuelleId: selfMember?.mutuelleId ?? '',
-    mutuelleName: selfMember?.mutuelleName ?? '',
-    mutuelleEmail: selfMember?.mutuelleEmail ?? '',
-    numeroAdherent: selfMember?.numeroAdherent ?? '',
+    mutuelleId: selfMember.mutuelleId,
+    mutuelleName: selfMember.mutuelleName,
+    mutuelleEmail: selfMember.mutuelleEmail,
+    numeroAdherent: selfMember.numeroAdherent,
   });
 
   function openEditMutuelle() {
-    if (selfMember) {
-      setMutuelleFields({
-        mutuelleId: selfMember.mutuelleId,
-        mutuelleName: selfMember.mutuelleName,
-        mutuelleEmail: selfMember.mutuelleEmail,
-        numeroAdherent: selfMember.numeroAdherent,
-      });
-    }
+    setMutuelleFields({
+      mutuelleId: selfMember.mutuelleId,
+      mutuelleName: selfMember.mutuelleName,
+      mutuelleEmail: selfMember.mutuelleEmail,
+      numeroAdherent: selfMember.numeroAdherent,
+    });
     setEditingMutuelle(true);
   }
 
   function saveMutuelle() {
-    if (!selfMember) return;
     updateFamilyMember(selfMember.id, mutuelleFields);
     setEditingMutuelle(false);
+  }
+
+  function saveRib() {
+    updateFamilyMember(selfMember.id, { rib: rib.trim() });
+    setEditingRib(false);
   }
 
   function selectBank(name: string) {
@@ -114,7 +108,9 @@ export default function ProfileScreen() {
           <Text className="text-lg font-bold text-neutral-900">{profile.name}</Text>
           <View className="flex-row items-center mt-1">
             <Mail color="#9CA3AF" size={13} />
-            <Text className="text-sm text-neutral-500 ml-1.5">marie.dupont@email.com</Text>
+            <Text className="text-sm text-neutral-500 ml-1.5">
+              {profile.email ?? 'email@non-renseigné.fr'}
+            </Text>
           </View>
         </View>
 
@@ -142,7 +138,7 @@ export default function ProfileScreen() {
               <View>
                 <Text className="text-xs text-neutral-500">Ma mutuelle</Text>
                 <Text className="text-base font-bold text-neutral-900">
-                  {selfMember?.mutuelleName || mutuelle.name}
+                  {selfMember.mutuelleName}
                 </Text>
               </View>
             </View>
@@ -175,44 +171,78 @@ export default function ProfileScreen() {
             <>
               <View className="rounded-full bg-primary-50 self-start px-3 py-1 mb-1">
                 <Text className="text-xs font-semibold text-primary-700">
-                  N° adhérent {selfMember?.numeroAdherent || '—'}
+                  N° adhérent {selfMember.numeroAdherent}
                 </Text>
               </View>
               <Text className="text-xs text-neutral-400 mt-1">
-                Adhérent depuis {mutuelle.memberSince}
+                Adhérent depuis {profile.contract.memberSince}
               </Text>
             </>
           )}
         </View>
 
+        <View className="rounded-xl2 bg-white border border-neutral-100 p-5 mb-5 shadow-sm shadow-black/5">
+          <View className="flex-row items-center justify-between mb-4">
+            <View className="flex-row items-center">
+              <View className="w-9 h-9 rounded-full bg-primary-50 items-center justify-center mr-3">
+                <Landmark color="#18AE8F" size={18} />
+              </View>
+              <View>
+                <Text className="text-xs text-neutral-500">RIB de remboursement</Text>
+                <Text className="text-sm font-semibold text-neutral-900">{selfMember.rib}</Text>
+              </View>
+            </View>
+            {!editingRib && (
+              <Pressable onPress={() => setEditingRib(true)} className="p-2">
+                <Pencil color="#9CA3AF" size={16} />
+              </Pressable>
+            )}
+          </View>
+          {editingRib && (
+            <View>
+              <TextInput
+                value={rib}
+                onChangeText={setRib}
+                placeholder="Ex : FR76 3000 •••• •••• •••• 4582"
+                placeholderTextColor="#9CA3AF"
+                autoCapitalize="characters"
+                className="rounded-xl border border-neutral-200 px-3.5 py-3 text-neutral-900 mb-3.5"
+              />
+              <View className="flex-row">
+                <Pressable
+                  onPress={saveRib}
+                  className="flex-1 items-center justify-center rounded-xl bg-primary-500 py-3 mr-2 active:bg-primary-600"
+                >
+                  <Text className="text-white font-bold">Enregistrer</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => {
+                    setRib(selfMember.rib);
+                    setEditingRib(false);
+                  }}
+                  className="flex-1 items-center justify-center rounded-xl bg-neutral-100 py-3 ml-2"
+                >
+                  <Text className="text-neutral-600 font-semibold">Annuler</Text>
+                </Pressable>
+              </View>
+            </View>
+          )}
+        </View>
+
         <View className="rounded-xl2 bg-white border border-neutral-100 p-5 shadow-sm shadow-black/5">
           <Text className="text-base font-bold text-neutral-900 mb-4">Mon forfait santé</Text>
-
-          <View className="mb-5">
-            <ProgressBar
-              label="Médecines douces"
-              used={medecineDouceSeances}
-              total={mutuelle.medecineDouce.total}
-              unit="séances"
-            />
-          </View>
-
-          <View>
-            <View className="flex-row items-center justify-between mb-1.5">
-              <Text className="text-sm font-medium text-neutral-600">Optique</Text>
-              <Text className="text-sm font-semibold text-neutral-900">
-                {mutuelle.optique.total - optiqueUsed} € restants
-              </Text>
-            </View>
-            <View className="h-2.5 w-full rounded-full bg-neutral-100 overflow-hidden">
-              <View
-                className="h-full rounded-full bg-primary-500"
-                style={{
-                  width: `${Math.round((optiqueUsed / mutuelle.optique.total) * 100)}%`,
-                }}
+          {profile.contract.guarantees.length === 0 ? (
+            <Text className="text-sm text-neutral-400">Aucune garantie renseignée.</Text>
+          ) : (
+            profile.contract.guarantees.map((guarantee) => (
+              <GuaranteeProgress
+                key={guarantee.id}
+                member={profile}
+                guarantee={guarantee}
+                reimbursements={reimbursements}
               />
-            </View>
-          </View>
+            ))
+          )}
         </View>
 
         <View className="rounded-xl2 bg-white border border-neutral-100 p-5 mt-5 shadow-sm shadow-black/5">

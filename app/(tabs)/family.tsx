@@ -2,11 +2,13 @@ import * as Haptics from 'expo-haptics';
 import { useState } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Plus, UserPlus } from 'lucide-react-native';
+import { Landmark, Plus, UserPlus } from 'lucide-react-native';
 
 import { MutuelleSelector, type MutuelleFields } from '@/components/MutuelleSelector';
 import { useReimbursements } from '@/context/ReimbursementContext';
 import type { FamilyMember } from '@/types';
+
+const AVATAR_COLORS = ['#18AE8F', '#3B82F6', '#EC4899', '#F59E0B', '#8B5CF6', '#06B6D4'];
 
 const emptyMutuelle: MutuelleFields = {
   mutuelleId: '',
@@ -21,17 +23,20 @@ export default function FamilyScreen() {
   const { familyMembers: members, addFamilyMember, updateFamilyMember } = useReimbursements();
   const [mode, setMode] = useState<FormMode | null>(null);
   const [name, setName] = useState('');
+  const [rib, setRib] = useState('');
   const [mutuelleFields, setMutuelleFields] = useState<MutuelleFields>(emptyMutuelle);
 
   function openAdd() {
     setMode({ type: 'add' });
     setName('');
+    setRib('');
     setMutuelleFields(emptyMutuelle);
   }
 
   function openEdit(member: FamilyMember) {
     setMode({ type: 'edit', id: member.id });
     setName(member.name);
+    setRib(member.rib);
     setMutuelleFields({
       mutuelleId: member.mutuelleId,
       mutuelleName: member.mutuelleName,
@@ -50,20 +55,31 @@ export default function FamilyScreen() {
     if (mode?.type === 'edit') {
       updateFamilyMember(mode.id, {
         name: name.trim(),
+        rib: rib.trim(),
         mutuelleId: mutuelleFields.mutuelleId,
         mutuelleName: mutuelleFields.mutuelleName,
         mutuelleEmail: mutuelleFields.mutuelleEmail,
         numeroAdherent: mutuelleFields.numeroAdherent,
       });
     } else {
+      const color = AVATAR_COLORS[members.length % AVATAR_COLORS.length];
       addFamilyMember({
         name: name.trim(),
         relation: 'parent',
         emoji: '🧑',
+        color,
+        rib: rib.trim() || 'Non renseigné',
         mutuelleId: mutuelleFields.mutuelleId || 'autre',
         mutuelleName: mutuelleFields.mutuelleName || 'Contrat à renseigner',
         mutuelleEmail: mutuelleFields.mutuelleEmail,
         numeroAdherent: mutuelleFields.numeroAdherent || '—',
+        contract: {
+          insurerName: mutuelleFields.mutuelleName || 'À définir',
+          formule: 'Formule à compléter',
+          memberSince: new Date().getFullYear().toString(),
+          monthlyPrice: 0,
+          guarantees: [],
+        },
       });
     }
 
@@ -78,23 +94,35 @@ export default function FamilyScreen() {
         contentContainerStyle={{ paddingBottom: 32 }}
         showsVerticalScrollIndicator={false}
       >
-        <Text className="text-2xl font-bold text-neutral-900 mt-4 mb-6">Mes proches</Text>
+        <Text className="text-2xl font-bold text-neutral-900 mt-4 mb-1">Mes proches</Text>
+        <Text className="text-sm text-neutral-500 mb-6">
+          Chaque proche a son propre contrat et son propre RIB, pour un routage 100% automatisé.
+        </Text>
 
         {members.map((member) => (
           <View key={member.id}>
             <Pressable
               onPress={() => openEdit(member)}
-              className="flex-row items-center rounded-xl2 bg-white border border-neutral-100 p-4 mb-3 shadow-sm shadow-black/5"
+              className="rounded-xl2 bg-white border border-neutral-100 p-4 mb-3 shadow-sm shadow-black/5"
             >
-              <View className="w-12 h-12 rounded-full bg-primary-50 items-center justify-center mr-3.5">
-                <Text className="text-2xl">{member.emoji}</Text>
+              <View className="flex-row items-center">
+                <View
+                  className="w-12 h-12 rounded-full items-center justify-center mr-3.5"
+                  style={{ backgroundColor: `${member.color}20` }}
+                >
+                  <Text className="text-2xl">{member.emoji}</Text>
+                </View>
+                <View className="flex-1">
+                  <Text className="text-base font-semibold text-neutral-900">{member.name}</Text>
+                  <Text className="text-sm text-neutral-500 mt-0.5">{member.mutuelleName}</Text>
+                  <Text className="text-xs text-neutral-400 mt-0.5">
+                    N° adhérent {member.numeroAdherent}
+                  </Text>
+                </View>
               </View>
-              <View className="flex-1">
-                <Text className="text-base font-semibold text-neutral-900">{member.name}</Text>
-                <Text className="text-sm text-neutral-500 mt-0.5">{member.mutuelleName}</Text>
-                <Text className="text-xs text-neutral-400 mt-0.5">
-                  N° adhérent {member.numeroAdherent}
-                </Text>
+              <View className="flex-row items-center mt-3 pt-3 border-t border-neutral-100">
+                <Landmark color="#9CA3AF" size={13} />
+                <Text className="text-xs text-neutral-500 ml-1.5">RIB dédié : {member.rib}</Text>
               </View>
             </Pressable>
 
@@ -108,6 +136,17 @@ export default function FamilyScreen() {
                   className="rounded-xl border border-neutral-200 px-3.5 py-3 text-neutral-900 mb-3.5"
                 />
                 <MutuelleSelector value={mutuelleFields} onChange={setMutuelleFields} />
+                <Text className="text-sm font-semibold text-neutral-700 mb-1.5">
+                  RIB / IBAN dédié
+                </Text>
+                <TextInput
+                  value={rib}
+                  onChangeText={setRib}
+                  placeholder="Ex : FR76 3000 •••• •••• •••• 4582"
+                  placeholderTextColor="#9CA3AF"
+                  autoCapitalize="characters"
+                  className="rounded-xl border border-neutral-200 px-3.5 py-3 text-neutral-900 mb-4"
+                />
                 <View className="flex-row">
                   <Pressable
                     onPress={save}
@@ -148,6 +187,15 @@ export default function FamilyScreen() {
               className="rounded-xl border border-neutral-200 px-3.5 py-3 text-neutral-900 mb-3.5"
             />
             <MutuelleSelector value={mutuelleFields} onChange={setMutuelleFields} />
+            <Text className="text-sm font-semibold text-neutral-700 mb-1.5">RIB / IBAN dédié</Text>
+            <TextInput
+              value={rib}
+              onChangeText={setRib}
+              placeholder="Ex : FR76 3000 •••• •••• •••• 4582"
+              placeholderTextColor="#9CA3AF"
+              autoCapitalize="characters"
+              className="rounded-xl border border-neutral-200 px-3.5 py-3 text-neutral-900 mb-4"
+            />
             <View className="flex-row">
               <Pressable
                 onPress={save}

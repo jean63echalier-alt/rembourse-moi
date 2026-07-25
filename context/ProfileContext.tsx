@@ -1,26 +1,28 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 
-import { profiles } from '@/data/mockData';
-import type { Profile } from '@/types';
+import { useReimbursements } from '@/context/ReimbursementContext';
+import type { FamilyMember } from '@/types';
 
 const PROFILE_ID_KEY = '@remboursemoi/profileId';
 
 interface ProfileContextValue {
-  profile: Profile;
+  profile: FamilyMember;
   setProfileId: (id: string) => void;
-  profiles: Profile[];
+  profiles: FamilyMember[];
 }
 
 const ProfileContext = createContext<ProfileContextValue | undefined>(undefined);
 
 export function ProfileProvider({ children }: { children: React.ReactNode }) {
-  const [profileId, setProfileIdState] = useState(profiles[0].id);
+  const { familyMembers } = useReimbursements();
+  const [profileId, setProfileIdState] = useState(familyMembers[0]?.id);
 
   useEffect(() => {
     AsyncStorage.getItem(PROFILE_ID_KEY).then((stored) => {
-      if (stored && profiles.some((p) => p.id === stored)) setProfileIdState(stored);
+      if (stored && familyMembers.some((m) => m.id === stored)) setProfileIdState(stored);
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function setProfileId(id: string) {
@@ -29,9 +31,9 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
   }
 
   const value = useMemo<ProfileContextValue>(() => {
-    const profile = profiles.find((p) => p.id === profileId) ?? profiles[0];
-    return { profile, setProfileId, profiles };
-  }, [profileId]);
+    const profile = familyMembers.find((m) => m.id === profileId) ?? familyMembers[0];
+    return { profile, setProfileId, profiles: familyMembers };
+  }, [profileId, familyMembers]);
 
   return <ProfileContext.Provider value={value}>{children}</ProfileContext.Provider>;
 }
