@@ -36,13 +36,22 @@ export interface MutuelleContract {
   optique: { used: number; total: number };
 }
 
+export interface Mutuelle {
+  id: string;
+  name: string;
+  emailRemboursement: string;
+  logo: string;
+}
+
 export interface FamilyMember {
   id: string;
   name: string;
   relation: ProfileRelation;
   emoji: string;
-  mutuelle: string;
-  contractNumber: string;
+  mutuelleId: string;
+  mutuelleName: string;
+  mutuelleEmail: string;
+  numeroAdherent: string;
 }
 
 export interface ScannedInvoice {

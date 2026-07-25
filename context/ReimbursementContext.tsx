@@ -10,8 +10,10 @@ const REIMBURSEMENTS_KEY = '@remboursemoi/reimbursements';
 interface ReimbursementContextValue {
   familyMembers: FamilyMember[];
   addFamilyMember: (member: Omit<FamilyMember, 'id'>) => void;
+  updateFamilyMember: (id: string, patch: Partial<Omit<FamilyMember, 'id'>>) => void;
   reimbursements: Reimbursement[];
   addReimbursement: (item: Omit<Reimbursement, 'id'>) => void;
+  updateReimbursementStatus: (id: string, status: Reimbursement['status']) => void;
 }
 
 const ReimbursementContext = createContext<ReimbursementContextValue | undefined>(undefined);
@@ -51,9 +53,13 @@ export function ReimbursementProvider({ children }: { children: React.ReactNode 
       familyMembers,
       addFamilyMember: (member) =>
         setFamilyMembers((prev) => [...prev, { ...member, id: `member-${Date.now()}` }]),
+      updateFamilyMember: (id, patch) =>
+        setFamilyMembers((prev) => prev.map((m) => (m.id === id ? { ...m, ...patch } : m))),
       reimbursements,
       addReimbursement: (item) =>
         setReimbursements((prev) => [{ ...item, id: `r-${Date.now()}` }, ...prev]),
+      updateReimbursementStatus: (id, status) =>
+        setReimbursements((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r))),
     }),
     [familyMembers, reimbursements]
   );

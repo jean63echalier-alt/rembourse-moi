@@ -44,7 +44,8 @@
         {
           "cameraPermission": "RembourseMoi a besoin d'accéder à votre caméra pour scanner vos factures."
         }
-      ]
+      ],
+      "expo-mail-composer"
     ],
     "experiments": {
       "typedRoutes": true,

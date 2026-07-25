@@ -1,6 +1,7 @@
 import type {
   BudgetProgress,
   FamilyMember,
+  Mutuelle,
   MutuelleContract,
   Profile,
   Reimbursement,
@@ -14,6 +15,9 @@ export const profiles: Profile[] = [
 ];
 
 export const yearlyRecovered = 340;
+
+export const MEDECINE_DOUCE_CATEGORY = 'Ostéopathie';
+export const OPTIQUE_CATEGORY = 'Optique';
 
 export const medecineDouceBudget: BudgetProgress = {
   label: 'Médecines douces',
@@ -63,30 +67,46 @@ export const mutuelle: MutuelleContract = {
   optique: { used: 0, total: 200 },
 };
 
+export const mutuelles: Mutuelle[] = [
+  { id: 'harmonie', name: 'Harmonie Mutuelle', emailRemboursement: 'remboursements@harmonie-mutuelle.fr', logo: '🟢' },
+  { id: 'mgen', name: 'MGEN', emailRemboursement: 'remboursements@mgen.fr', logo: '🔵' },
+  { id: 'maif', name: 'MAIF Santé', emailRemboursement: 'sante@maif.fr', logo: '⚫️' },
+  { id: 'malakoff', name: 'Malakoff Humanis', emailRemboursement: 'remboursements@malakoffhumanis.com', logo: '🟠' },
+  { id: 'axa', name: 'AXA Santé', emailRemboursement: 'remboursements@axa.fr', logo: '🔷' },
+  { id: 'alan', name: 'Alan', emailRemboursement: 'remboursements@alan.com', logo: '⬛' },
+  { id: 'autre', name: 'Autre / Saisie libre', emailRemboursement: '', logo: '➕' },
+];
+
 export const familyMembers: FamilyMember[] = [
   {
     id: 'marie',
     name: 'Marie (Mes soins)',
     relation: 'self',
     emoji: '👩',
-    mutuelle: 'Harmonie Mutuelle - Confort',
-    contractNumber: 'HM-2291-004',
+    mutuelleId: 'harmonie',
+    mutuelleName: 'Harmonie Mutuelle',
+    mutuelleEmail: 'remboursements@harmonie-mutuelle.fr',
+    numeroAdherent: 'HM-2291-004',
   },
   {
     id: 'papi',
     name: 'Papa',
     relation: 'grandfather',
     emoji: '👴',
-    mutuelle: 'Harmonie Mutuelle - Sénior',
-    contractNumber: 'HM-2291-011',
+    mutuelleId: 'harmonie',
+    mutuelleName: 'Harmonie Mutuelle',
+    mutuelleEmail: 'remboursements@harmonie-mutuelle.fr',
+    numeroAdherent: 'HM-2291-011',
   },
   {
     id: 'mamie',
     name: 'Maman',
     relation: 'grandmother',
     emoji: '👵',
-    mutuelle: 'Harmonie Mutuelle - Sénior',
-    contractNumber: 'HM-2291-012',
+    mutuelleId: 'harmonie',
+    mutuelleName: 'Harmonie Mutuelle',
+    mutuelleEmail: 'remboursements@harmonie-mutuelle.fr',
+    numeroAdherent: 'HM-2291-012',
   },
 ];
 

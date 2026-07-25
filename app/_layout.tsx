@@ -3,6 +3,7 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 
+import { BankSyncProvider } from '@/context/BankSyncContext';
 import { ProfileProvider } from '@/context/ProfileContext';
 import { ReimbursementProvider } from '@/context/ReimbursementContext';
 
@@ -17,10 +18,12 @@ export default function RootLayout() {
     <ThemeProvider value={DefaultTheme}>
       <ProfileProvider>
         <ReimbursementProvider>
-          <Stack>
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          </Stack>
-          <StatusBar style="dark" />
+          <BankSyncProvider>
+            <Stack>
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            </Stack>
+            <StatusBar style="dark" />
+          </BankSyncProvider>
         </ReimbursementProvider>
       </ProfileProvider>
     </ThemeProvider>

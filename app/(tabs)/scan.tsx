@@ -1,9 +1,11 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Haptics from 'expo-haptics';
+import * as MailComposer from 'expo-mail-composer';
+import * as Sharing from 'expo-sharing';
 import { useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { CameraIcon, CheckCircle2, FileText } from 'lucide-react-native';
+import { CameraIcon, CheckCircle2, FileText, Mail, Share2 } from 'lucide-react-native';
 
 import { useProfile } from '@/context/ProfileContext';
 import { useReimbursements } from '@/context/ReimbursementContext';
@@ -14,25 +16,33 @@ type ScanState = 'camera' | 'scanning' | 'result' | 'sent';
 export default function ScanScreen() {
   const [state, setState] = useState<ScanState>('camera');
   const [permission, requestPermission] = useCameraPermissions();
+  const [photoUri, setPhotoUri] = useState<string | null>(null);
   const cameraRef = useRef<CameraView>(null);
   const { profile } = useProfile();
-  const { addReimbursement } = useReimbursements();
+  const { familyMembers, addReimbursement } = useReimbursements();
+  const [selectedMemberId, setSelectedMemberId] = useState(profile.id);
+
+  const selectedMember =
+    familyMembers.find((m) => m.id === selectedMemberId) ?? familyMembers[0];
 
   async function capture() {
     if (!cameraRef.current) return;
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    await cameraRef.current.takePictureAsync({ quality: 0.5 });
+    const photo = await cameraRef.current.takePictureAsync({ quality: 0.5 });
+    setPhotoUri(photo?.uri ?? null);
     setState('scanning');
     setTimeout(() => setState('result'), 1800);
   }
 
   function reset() {
+    setPhotoUri(null);
+    setSelectedMemberId(profile.id);
     setState('camera');
   }
 
-  async function sendToMutuelle() {
+  function recordReimbursement() {
     addReimbursement({
-      profileId: profile.id,
+      profileId: selectedMember.id,
       provider: mockScanResult.provider,
       category: mockScanResult.category,
       amount: mockScanResult.amount,
@@ -40,6 +50,28 @@ export default function ScanScreen() {
       status: 'pending',
       date: new Date().toISOString().slice(0, 10),
     });
+  }
+
+  async function sendByEmail() {
+    const available = await MailComposer.isAvailableAsync();
+    if (available) {
+      await MailComposer.composeAsync({
+        recipients: selectedMember.mutuelleEmail ? [selectedMember.mutuelleEmail] : [],
+        subject: `Remboursement — N° adhérent ${selectedMember.numeroAdherent}`,
+        body: `Bonjour,\n\nVeuillez trouver ci-joint ma facture ${mockScanResult.provider} d'un montant de ${mockScanResult.amount.toFixed(2)} €.\n\nCordialement,\n${profile.name}`,
+        attachments: photoUri ? [photoUri] : [],
+      });
+    }
+    recordReimbursement();
+    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setState('sent');
+  }
+
+  async function shareInvoice() {
+    if (photoUri && (await Sharing.isAvailableAsync())) {
+      await Sharing.shareAsync(photoUri);
+    }
+    recordReimbursement();
     await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setState('sent');
   }
@@ -135,12 +167,52 @@ export default function ScanScreen() {
               </View>
             </View>
 
-            <Pressable
-              onPress={sendToMutuelle}
-              className="rounded-xl2 bg-primary-500 py-4 items-center mb-3 active:bg-primary-600"
+            <Text className="text-sm font-semibold text-neutral-700 mb-2">Pour quel proche ?</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ paddingRight: 8 }}
+              className="mb-6"
             >
-              <Text className="text-white text-base font-bold">
-                🚀 Envoyer à la Mutuelle en 1 clic
+              {familyMembers.map((member) => {
+                const active = member.id === selectedMember.id;
+                return (
+                  <Pressable
+                    key={member.id}
+                    onPress={() => setSelectedMemberId(member.id)}
+                    className={`flex-row items-center rounded-full px-3.5 py-2 mr-2 border ${
+                      active ? 'bg-primary-50 border-primary-500' : 'bg-white border-neutral-200'
+                    }`}
+                  >
+                    <Text className="text-base mr-1.5">{member.emoji}</Text>
+                    <Text
+                      className={`text-sm font-medium ${
+                        active ? 'text-primary-700' : 'text-neutral-600'
+                      }`}
+                    >
+                      {member.name}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+
+            <Pressable
+              onPress={sendByEmail}
+              className="flex-row rounded-xl2 bg-primary-500 py-4 items-center justify-center mb-3 active:bg-primary-600"
+            >
+              <Mail color="white" size={18} />
+              <Text className="text-white text-base font-bold ml-2">
+                Envoyer par e-mail à {selectedMember.mutuelleName}
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={shareInvoice}
+              className="flex-row rounded-xl2 bg-primary-50 py-4 items-center justify-center mb-3 active:bg-primary-100"
+            >
+              <Share2 color="#18AE8F" size={18} />
+              <Text className="text-primary-700 text-base font-bold ml-2">
+                Partager / Sauvegarder
               </Text>
             </Pressable>
             <Pressable onPress={reset} className="items-center py-2">

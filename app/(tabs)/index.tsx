@@ -7,11 +7,20 @@ import { ReimbursementCard } from '@/components/ReimbursementCard';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { useProfile } from '@/context/ProfileContext';
 import { useReimbursements } from '@/context/ReimbursementContext';
-import { medecineDouceBudget, yearlyRecovered } from '@/data/mockData';
+import { MEDECINE_DOUCE_CATEGORY, medecineDouceBudget, yearlyRecovered } from '@/data/mockData';
 
 export default function HomeScreen() {
   const { profile, profiles, setProfileId } = useProfile();
   const { reimbursements } = useReimbursements();
+
+  const medecineDouceUsed = reimbursements
+    .filter(
+      (r) =>
+        r.profileId === profile.id &&
+        r.status === 'reimbursed' &&
+        r.category === MEDECINE_DOUCE_CATEGORY
+    )
+    .reduce((sum, r) => sum + r.reimbursedAmount, 0);
 
   function selectProfile(id: string) {
     Haptics.selectionAsync();
@@ -53,7 +62,7 @@ export default function HomeScreen() {
           </Text>
           <ProgressBar
             label={medecineDouceBudget.label}
-            used={medecineDouceBudget.used}
+            used={medecineDouceUsed}
             total={medecineDouceBudget.total}
             unit={medecineDouceBudget.unit}
           />

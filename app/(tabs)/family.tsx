@@ -4,27 +4,71 @@ import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Plus, UserPlus } from 'lucide-react-native';
 
+import { MutuelleSelector, type MutuelleFields } from '@/components/MutuelleSelector';
 import { useReimbursements } from '@/context/ReimbursementContext';
+import type { FamilyMember } from '@/types';
+
+const emptyMutuelle: MutuelleFields = {
+  mutuelleId: '',
+  mutuelleName: '',
+  mutuelleEmail: '',
+  numeroAdherent: '',
+};
+
+type FormMode = { type: 'add' } | { type: 'edit'; id: string };
 
 export default function FamilyScreen() {
-  const { familyMembers: members, addFamilyMember } = useReimbursements();
-  const [adding, setAdding] = useState(false);
+  const { familyMembers: members, addFamilyMember, updateFamilyMember } = useReimbursements();
+  const [mode, setMode] = useState<FormMode | null>(null);
   const [name, setName] = useState('');
-  const [contractNumber, setContractNumber] = useState('');
+  const [mutuelleFields, setMutuelleFields] = useState<MutuelleFields>(emptyMutuelle);
 
-  function addMember() {
-    if (!name.trim()) return;
-    addFamilyMember({
-      name: name.trim(),
-      relation: 'parent',
-      emoji: '🧑',
-      mutuelle: 'Contrat à renseigner',
-      contractNumber: contractNumber.trim() || '—',
-    });
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  function openAdd() {
+    setMode({ type: 'add' });
     setName('');
-    setContractNumber('');
-    setAdding(false);
+    setMutuelleFields(emptyMutuelle);
+  }
+
+  function openEdit(member: FamilyMember) {
+    setMode({ type: 'edit', id: member.id });
+    setName(member.name);
+    setMutuelleFields({
+      mutuelleId: member.mutuelleId,
+      mutuelleName: member.mutuelleName,
+      mutuelleEmail: member.mutuelleEmail,
+      numeroAdherent: member.numeroAdherent,
+    });
+  }
+
+  function closeForm() {
+    setMode(null);
+  }
+
+  function save() {
+    if (!name.trim()) return;
+
+    if (mode?.type === 'edit') {
+      updateFamilyMember(mode.id, {
+        name: name.trim(),
+        mutuelleId: mutuelleFields.mutuelleId,
+        mutuelleName: mutuelleFields.mutuelleName,
+        mutuelleEmail: mutuelleFields.mutuelleEmail,
+        numeroAdherent: mutuelleFields.numeroAdherent,
+      });
+    } else {
+      addFamilyMember({
+        name: name.trim(),
+        relation: 'parent',
+        emoji: '🧑',
+        mutuelleId: mutuelleFields.mutuelleId || 'autre',
+        mutuelleName: mutuelleFields.mutuelleName || 'Contrat à renseigner',
+        mutuelleEmail: mutuelleFields.mutuelleEmail,
+        numeroAdherent: mutuelleFields.numeroAdherent || '—',
+      });
+    }
+
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    closeForm();
   }
 
   return (
@@ -37,26 +81,55 @@ export default function FamilyScreen() {
         <Text className="text-2xl font-bold text-neutral-900 mt-4 mb-6">Mes proches</Text>
 
         {members.map((member) => (
-          <View
-            key={member.id}
-            className="flex-row items-center rounded-xl2 bg-white border border-neutral-100 p-4 mb-3 shadow-sm shadow-black/5"
-          >
-            <View className="w-12 h-12 rounded-full bg-primary-50 items-center justify-center mr-3.5">
-              <Text className="text-2xl">{member.emoji}</Text>
-            </View>
-            <View className="flex-1">
-              <Text className="text-base font-semibold text-neutral-900">{member.name}</Text>
-              <Text className="text-sm text-neutral-500 mt-0.5">{member.mutuelle}</Text>
-              <Text className="text-xs text-neutral-400 mt-0.5">
-                Contrat {member.contractNumber}
-              </Text>
-            </View>
+          <View key={member.id}>
+            <Pressable
+              onPress={() => openEdit(member)}
+              className="flex-row items-center rounded-xl2 bg-white border border-neutral-100 p-4 mb-3 shadow-sm shadow-black/5"
+            >
+              <View className="w-12 h-12 rounded-full bg-primary-50 items-center justify-center mr-3.5">
+                <Text className="text-2xl">{member.emoji}</Text>
+              </View>
+              <View className="flex-1">
+                <Text className="text-base font-semibold text-neutral-900">{member.name}</Text>
+                <Text className="text-sm text-neutral-500 mt-0.5">{member.mutuelleName}</Text>
+                <Text className="text-xs text-neutral-400 mt-0.5">
+                  N° adhérent {member.numeroAdherent}
+                </Text>
+              </View>
+            </Pressable>
+
+            {mode?.type === 'edit' && mode.id === member.id && (
+              <View className="rounded-xl2 bg-white border border-neutral-100 p-4 mb-3 -mt-2 shadow-sm shadow-black/5">
+                <Text className="text-sm font-semibold text-neutral-700 mb-1.5">Nom du proche</Text>
+                <TextInput
+                  value={name}
+                  onChangeText={setName}
+                  placeholderTextColor="#9CA3AF"
+                  className="rounded-xl border border-neutral-200 px-3.5 py-3 text-neutral-900 mb-3.5"
+                />
+                <MutuelleSelector value={mutuelleFields} onChange={setMutuelleFields} />
+                <View className="flex-row">
+                  <Pressable
+                    onPress={save}
+                    className="flex-1 flex-row items-center justify-center rounded-xl bg-primary-500 py-3 mr-2 active:bg-primary-600"
+                  >
+                    <Text className="text-white font-bold">Enregistrer</Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={closeForm}
+                    className="flex-1 items-center justify-center rounded-xl bg-neutral-100 py-3 ml-2"
+                  >
+                    <Text className="text-neutral-600 font-semibold">Annuler</Text>
+                  </Pressable>
+                </View>
+              </View>
+            )}
           </View>
         ))}
 
-        {!adding && (
+        {mode === null && (
           <Pressable
-            onPress={() => setAdding(true)}
+            onPress={openAdd}
             className="flex-row items-center justify-center rounded-xl2 border-2 border-dashed border-neutral-300 py-4 mt-2"
           >
             <UserPlus color="#18AE8F" size={18} />
@@ -64,7 +137,7 @@ export default function FamilyScreen() {
           </Pressable>
         )}
 
-        {adding && (
+        {mode?.type === 'add' && (
           <View className="rounded-xl2 bg-white border border-neutral-100 p-4 mt-2 shadow-sm shadow-black/5">
             <Text className="text-sm font-semibold text-neutral-700 mb-1.5">Nom du proche</Text>
             <TextInput
@@ -74,26 +147,17 @@ export default function FamilyScreen() {
               placeholderTextColor="#9CA3AF"
               className="rounded-xl border border-neutral-200 px-3.5 py-3 text-neutral-900 mb-3.5"
             />
-            <Text className="text-sm font-semibold text-neutral-700 mb-1.5">
-              N° de contrat mutuelle
-            </Text>
-            <TextInput
-              value={contractNumber}
-              onChangeText={setContractNumber}
-              placeholder="Ex : HM-2291-020"
-              placeholderTextColor="#9CA3AF"
-              className="rounded-xl border border-neutral-200 px-3.5 py-3 text-neutral-900 mb-4"
-            />
+            <MutuelleSelector value={mutuelleFields} onChange={setMutuelleFields} />
             <View className="flex-row">
               <Pressable
-                onPress={addMember}
+                onPress={save}
                 className="flex-1 flex-row items-center justify-center rounded-xl bg-primary-500 py-3 mr-2 active:bg-primary-600"
               >
                 <Plus color="white" size={16} />
                 <Text className="text-white font-bold ml-1.5">Ajouter</Text>
               </Pressable>
               <Pressable
-                onPress={() => setAdding(false)}
+                onPress={closeForm}
                 className="flex-1 items-center justify-center rounded-xl bg-neutral-100 py-3 ml-2"
               >
                 <Text className="text-neutral-600 font-semibold">Annuler</Text>
