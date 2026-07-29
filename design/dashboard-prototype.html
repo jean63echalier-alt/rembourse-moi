@@ -1,0 +1,720 @@
+<title>Rembourse-moi — Tableau de bord</title>
+<style>
+  :root {
+    --bg: #f5f6f1;
+    --surface: #ffffff;
+    --surface-sunken: #eef0e9;
+    --ink: #1a2019;
+    --ink-muted: #5c6459;
+    --ink-faint: #8a9083;
+    --border: #dfe3d8;
+    --brand: #0e6e58;
+    --brand-ink: #ffffff;
+    --brand-tint: #e2f1ec;
+    --warning: #a8690a;
+    --warning-bg: #fbf0da;
+    --warning-border: #ecd6a4;
+    --info: #2a5fa5;
+    --info-bg: #e8eff8;
+    --success: #2f7d4b;
+    --success-bg: #e7f3ea;
+    --neutral: #656d61;
+    --neutral-bg: #eceee6;
+    --shadow: 0 1px 2px rgba(26,32,25,0.06), 0 8px 24px -12px rgba(26,32,25,0.18);
+    --shadow-lg: 0 20px 48px -16px rgba(26,32,25,0.35);
+    --radius: 16px;
+    --font-display: ui-serif, "Iowan Old Style", "Palatino Linotype", "Georgia", serif;
+    --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #10130f;
+      --surface: #181c16;
+      --surface-sunken: #14170f;
+      --ink: #eceee6;
+      --ink-muted: #a8ae9f;
+      --ink-faint: #767d6f;
+      --border: #2a2f24;
+      --brand: #4bb094;
+      --brand-ink: #08130f;
+      --brand-tint: #17322a;
+      --warning: #e3a940;
+      --warning-bg: #33280f;
+      --warning-border: #4a3a15;
+      --info: #7aabe6;
+      --info-bg: #17253a;
+      --success: #6fc48e;
+      --success-bg: #16301f;
+      --neutral: #9aa192;
+      --neutral-bg: #1e221a;
+      --shadow: 0 1px 2px rgba(0,0,0,0.4), 0 8px 24px -12px rgba(0,0,0,0.6);
+      --shadow-lg: 0 20px 48px -16px rgba(0,0,0,0.7);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #10130f; --surface: #181c16; --surface-sunken: #14170f;
+    --ink: #eceee6; --ink-muted: #a8ae9f; --ink-faint: #767d6f; --border: #2a2f24;
+    --brand: #4bb094; --brand-ink: #08130f; --brand-tint: #17322a;
+    --warning: #e3a940; --warning-bg: #33280f; --warning-border: #4a3a15;
+    --info: #7aabe6; --info-bg: #17253a; --success: #6fc48e; --success-bg: #16301f;
+    --neutral: #9aa192; --neutral-bg: #1e221a;
+  }
+  :root[data-theme="light"] {
+    --bg: #f5f6f1; --surface: #ffffff; --surface-sunken: #eef0e9;
+    --ink: #1a2019; --ink-muted: #5c6459; --ink-faint: #8a9083; --border: #dfe3d8;
+    --brand: #0e6e58; --brand-ink: #ffffff; --brand-tint: #e2f1ec;
+    --warning: #a8690a; --warning-bg: #fbf0da; --warning-border: #ecd6a4;
+    --info: #2a5fa5; --info-bg: #e8eff8; --success: #2f7d4b; --success-bg: #e7f3ea;
+    --neutral: #656d61; --neutral-bg: #eceee6;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-body);
+    display: flex;
+    justify-content: center;
+    padding: 32px 16px 64px;
+    min-height: 100vh;
+  }
+  button { font-family: inherit; }
+  :focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+
+  .phone {
+    width: 100%;
+    max-width: 402px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 32px;
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-height: 780px;
+  }
+
+  .topbar {
+    padding: 22px 20px 14px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    flex: none;
+  }
+  .topbar .eyebrow {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--brand);
+  }
+  .topbar h1 {
+    font-family: var(--font-body);
+    font-size: 19px;
+    font-weight: 700;
+    margin: 2px 0 0;
+    letter-spacing: -0.01em;
+  }
+
+  .view { flex: 1; overflow-y: auto; padding: 18px 18px 100px; }
+  .view[hidden] { display: none; }
+
+  .hero {
+    background: linear-gradient(165deg, var(--brand-tint), var(--surface) 65%);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px 20px 18px;
+    margin-bottom: 14px;
+  }
+  .hero .hero-label {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+  }
+  .hero .hero-amount {
+    font-family: var(--font-display);
+    font-size: 40px;
+    line-height: 1.05;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    margin: 6px 0 10px;
+    text-wrap: balance;
+    color: var(--ink);
+  }
+  .hero .hero-sub {
+    font-size: 13px;
+    color: var(--ink-muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .hero .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); flex: none; }
+  .hero .progress {
+    margin-top: 12px;
+    height: 6px;
+    border-radius: 4px;
+    background: var(--surface-sunken);
+    overflow: hidden;
+  }
+  .hero .progress-fill {
+    height: 100%;
+    background: var(--brand);
+    border-radius: 4px;
+    transition: width 0.4s ease;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .hero .progress-fill, .sheet, .modal, .overlay { transition: none !important; }
+  }
+
+  .alert-banner {
+    background: var(--warning-bg);
+    border: 1px solid var(--warning-border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    margin-bottom: 16px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .alert-banner svg { flex: none; margin-top: 2px; color: var(--warning); }
+  .alert-banner .alert-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--warning);
+    margin: 0 0 4px;
+  }
+  .alert-banner .alert-detail {
+    font-size: 13px;
+    color: var(--ink);
+    line-height: 1.5;
+    margin: 0;
+  }
+  .alert-banner .alert-detail b { font-variant-numeric: tabular-nums; }
+  .alert-banner .relance-btn {
+    margin-top: 10px;
+    background: var(--warning);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 7px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .alert-banner .relance-btn:hover { filter: brightness(1.06); }
+
+  .list-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .list-header h2 {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    margin: 0;
+  }
+  .count-chip {
+    font-size: 12px;
+    color: var(--ink-faint);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .care-list { display: flex; flex-direction: column; gap: 10px; }
+  .care-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 12px 14px;
+    text-align: left;
+    cursor: pointer;
+    width: 100%;
+  }
+  .care-card:hover { border-color: var(--brand); }
+  .care-card .date-chip {
+    flex: none;
+    width: 44px;
+    text-align: center;
+    padding: 6px 0;
+    border-radius: 10px;
+    background: var(--surface-sunken);
+  }
+  .care-card .date-chip .d { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .care-card .date-chip .m { font-size: 10px; text-transform: uppercase; color: var(--ink-faint); letter-spacing: 0.03em; }
+  .care-card .info { flex: 1; min-width: 0; }
+  .care-card .cat { font-size: 15px; font-weight: 600; margin: 0 0 2px; }
+  .care-card .meta { font-size: 12.5px; color: var(--ink-muted); margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .care-card .amt-col { flex: none; text-align: right; }
+  .care-card .amt { font-family: var(--font-display); font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; display: block; margin-bottom: 4px; }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 20px;
+  }
+  .pill.pending { background: var(--neutral-bg); color: var(--neutral); }
+  .pill.secu { background: var(--info-bg); color: var(--info); }
+  .pill.done { background: var(--success-bg); color: var(--success); }
+  .pill .pdot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+  .pill.overdue-flag { background: var(--warning-bg); color: var(--warning); }
+
+  .empty-state { padding: 40px 10px; text-align: center; color: var(--ink-faint); font-size: 13px; }
+
+  .unpaid-header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+  .back-btn {
+    background: var(--surface-sunken); border: 1px solid var(--border); border-radius: 10px;
+    width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: var(--ink); flex: none;
+  }
+  .unpaid-header h2 { font-size: 17px; font-weight: 700; margin: 0; }
+
+  .fab {
+    position: absolute;
+    right: 20px;
+    bottom: 24px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--brand);
+    color: var(--brand-ink);
+    border: none;
+    box-shadow: var(--shadow);
+    font-size: 28px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .fab:hover { filter: brightness(1.05); }
+
+  .overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(10,14,9,0.42);
+    display: flex;
+    align-items: flex-end;
+    z-index: 20;
+  }
+  .overlay[hidden] { display: none; }
+
+  .sheet, .modal {
+    background: var(--surface);
+    width: 100%;
+    border-radius: 20px 20px 0 0;
+    padding: 8px 20px 22px;
+    box-shadow: var(--shadow-lg);
+    max-height: 88%;
+    overflow-y: auto;
+  }
+  .grabber { width: 36px; height: 4px; border-radius: 4px; background: var(--border); margin: 8px auto 14px; }
+
+  .sheet-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px; }
+  .sheet-head h3 { font-size: 17px; font-weight: 700; margin: 0 0 2px; }
+  .sheet-head .close-btn { background: none; border: none; color: var(--ink-faint); font-size: 20px; cursor: pointer; padding: 4px; }
+  .sheet-sub { font-size: 13px; color: var(--ink-muted); margin: 0 0 16px; }
+
+  .breakdown { background: var(--surface-sunken); border-radius: 12px; padding: 12px 14px; margin-bottom: 16px; }
+  .breakdown-row { display: flex; justify-content: space-between; font-size: 13.5px; padding: 5px 0; }
+  .breakdown-row.total { border-top: 1px solid var(--border); margin-top: 4px; padding-top: 9px; font-weight: 700; }
+  .breakdown-row span:last-child { font-variant-numeric: tabular-nums; }
+
+  .refund-actions { display: flex; flex-direction: column; gap: 8px; }
+  .refund-actions button {
+    border-radius: 12px;
+    padding: 12px 14px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--ink);
+    text-align: left;
+  }
+  .refund-actions button.primary { background: var(--brand); color: var(--brand-ink); border-color: var(--brand); }
+  .refund-actions button:hover { border-color: var(--brand); }
+  .refund-actions .all-done { font-size: 13px; color: var(--success); font-weight: 600; padding: 10px 2px; }
+
+  .modal h3 { font-size: 17px; font-weight: 700; margin: 0 0 14px; }
+  .field { margin-bottom: 12px; }
+  .field label { display: block; font-size: 12px; font-weight: 600; color: var(--ink-muted); margin-bottom: 5px; }
+  .field input, .field select {
+    width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border);
+    background: var(--surface-sunken); color: var(--ink); font-size: 14px; font-family: inherit;
+  }
+  .field-row { display: flex; gap: 10px; }
+  .field-row .field { flex: 1; }
+  .modal-actions { display: flex; gap: 10px; margin-top: 6px; }
+  .modal-actions button {
+    flex: 1; padding: 12px; border-radius: 12px; font-size: 14px; font-weight: 600; cursor: pointer; border: 1px solid var(--border);
+  }
+  .modal-actions .cancel { background: var(--surface); color: var(--ink-muted); }
+  .modal-actions .submit { background: var(--brand); color: var(--brand-ink); border-color: var(--brand); }
+  .scan-hint {
+    display: flex; align-items: center; gap: 10px; background: var(--brand-tint); border: 1px dashed var(--brand);
+    border-radius: 12px; padding: 12px; margin-bottom: 16px; font-size: 12.5px; color: var(--ink-muted);
+  }
+</style>
+
+<div class="phone">
+  <div class="topbar">
+    <div class="eyebrow">Rembourse-moi</div>
+    <h1>Vos remboursements santé</h1>
+  </div>
+
+  <main id="dashboardView" class="view">
+    <section class="hero">
+      <div class="hero-label">Reste à charge estimé</div>
+      <div class="hero-amount" id="heroAmount">0,00 €</div>
+      <div class="hero-sub"><span class="dot" id="heroDot"></span><span id="heroSub">—</span></div>
+      <div class="progress"><div class="progress-fill" id="heroProgress" style="width:0%"></div></div>
+    </section>
+
+    <section id="alertBanner" class="alert-banner" hidden>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+      <div style="flex:1">
+        <p class="alert-title" id="alertTitle">Remboursements en retard</p>
+        <p class="alert-detail" id="alertDetail"></p>
+        <button class="relance-btn" id="relanceBtn">Relancer</button>
+      </div>
+    </section>
+
+    <section class="list-section">
+      <div class="list-header">
+        <h2>Soins récents</h2>
+        <span class="count-chip" id="dashCount"></span>
+      </div>
+      <div class="care-list" id="careList"></div>
+    </section>
+  </main>
+
+  <main id="unpaidView" class="view" hidden>
+    <div class="unpaid-header">
+      <button class="back-btn" id="backBtn" aria-label="Retour">←</button>
+      <h2>Retards de remboursement</h2>
+    </div>
+    <div class="care-list" id="unpaidList"></div>
+  </main>
+
+  <button class="fab" id="fab" aria-label="Scanner ou ajouter un soin">+</button>
+
+  <div class="overlay" id="sheetOverlay" hidden>
+    <div class="sheet">
+      <div class="grabber"></div>
+      <div class="sheet-head">
+        <div>
+          <h3 id="sheetTitle">—</h3>
+          <p class="sheet-sub" id="sheetSub">—</p>
+        </div>
+        <button class="close-btn" id="sheetClose" aria-label="Fermer">✕</button>
+      </div>
+      <div class="breakdown" id="sheetBreakdown"></div>
+      <div class="refund-actions" id="sheetActions"></div>
+    </div>
+  </div>
+
+  <div class="overlay" id="modalOverlay" hidden>
+    <div class="modal">
+      <div class="grabber"></div>
+      <h3>Ajouter un soin</h3>
+      <div class="scan-hint">📷 Scan de décompte indisponible dans cet aperçu — remplissez les champs ci-dessous.</div>
+      <form id="addForm">
+        <div class="field">
+          <label for="f-cat">Catégorie</label>
+          <select id="f-cat">
+            <option>Généraliste</option>
+            <option>Spécialiste</option>
+            <option>Dentiste</option>
+            <option>Ophtalmologiste</option>
+            <option>Kinésithérapeute</option>
+            <option>Pharmacie</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="f-prat">Praticien</label>
+          <input id="f-prat" type="text" placeholder="Dr Martin" required>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="f-benef">Bénéficiaire</label>
+            <input id="f-benef" type="text" value="Vous" required>
+          </div>
+          <div class="field">
+            <label for="f-date">Date du soin</label>
+            <input id="f-date" type="date" required>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="f-total">Montant payé (€)</label>
+            <input id="f-total" type="number" step="0.01" min="0" placeholder="25,00" required>
+          </div>
+          <div class="field">
+            <label for="f-secu">Part Sécu attendue (€)</label>
+            <input id="f-secu" type="number" step="0.01" min="0" placeholder="17,50" required>
+          </div>
+        </div>
+        <div class="field">
+          <label for="f-mut">Part mutuelle attendue (€)</label>
+          <input id="f-mut" type="number" step="0.01" min="0" placeholder="7,50" required>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="cancel" id="modalCancel">Annuler</button>
+          <button type="submit" class="submit">Ajouter</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var STORAGE_KEY = "rembourse-moi-soins-v1";
+  var OVERDUE_DAYS = 30;
+
+  var MONTHS = ["janv.","févr.","mars","avr.","mai","juin","juil.","août","sept.","oct.","nov.","déc."];
+
+  function uid() { return Math.random().toString(36).slice(2, 10); }
+  function todayISO() { return new Date().toISOString().slice(0, 10); }
+  function eur(cents) {
+    return (cents / 100).toLocaleString("fr-FR", { style: "currency", currency: "EUR" });
+  }
+  function daysSince(dateStr) {
+    var d = new Date(dateStr + "T00:00:00");
+    var now = new Date();
+    now.setHours(0,0,0,0);
+    return Math.floor((now - d) / 86400000);
+  }
+  function dateChip(dateStr) {
+    var d = new Date(dateStr + "T00:00:00");
+    return { d: d.getDate(), m: MONTHS[d.getMonth()] };
+  }
+
+  function seedData() {
+    var today = new Date();
+    function iso(offsetDays) {
+      var d = new Date(today);
+      d.setDate(d.getDate() - offsetDays);
+      return d.toISOString().slice(0, 10);
+    }
+    return [
+      { id: uid(), date: iso(3), category: "Pharmacie", practitioner: "Pharmacie du Centre", beneficiary: "Vous", totalCents: 1840, secuPartCents: 1290, mutuellePartCents: 550, status: "PENDING", secuRefundedAt: null, refundedAt: null, createdAt: iso(3) },
+      { id: uid(), date: iso(9), category: "Généraliste", practitioner: "Dr Lefèvre", beneficiary: "Vous", totalCents: 2650, secuPartCents: 1855, mutuellePartCents: 795, status: "SECU_REFUNDED", secuRefundedAt: iso(4), refundedAt: null, createdAt: iso(9) },
+      { id: uid(), date: iso(46), category: "Dentiste", practitioner: "Dr Aubry", beneficiary: "Léa (enfant)", totalCents: 12000, secuPartCents: 2600, mutuellePartCents: 6400, status: "PENDING", secuRefundedAt: null, refundedAt: null, createdAt: iso(46) },
+      { id: uid(), date: iso(58), category: "Kinésithérapeute", practitioner: "Cabinet Rivière", beneficiary: "Vous", totalCents: 3800, secuPartCents: 2280, mutuellePartCents: 1520, status: "SECU_REFUNDED", secuRefundedAt: iso(20), refundedAt: null, createdAt: iso(58) },
+      { id: uid(), date: iso(14), category: "Ophtalmologiste", practitioner: "Dr Kessler", beneficiary: "Vous", totalCents: 6500, secuPartCents: 1690, mutuellePartCents: 4810, status: "REFUNDED", secuRefundedAt: iso(10), refundedAt: iso(6), createdAt: iso(14) }
+    ];
+  }
+
+  function load() {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) { var seed = seedData(); save(seed); return seed; }
+      return JSON.parse(raw);
+    } catch (e) { return seedData(); }
+  }
+  function save(list) { localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); }
+
+  var soins = load();
+
+  function expectedRemaining(s) {
+    if (s.status === "PENDING") return s.secuPartCents + s.mutuellePartCents;
+    if (s.status === "SECU_REFUNDED") return s.mutuellePartCents;
+    return 0;
+  }
+  function isOverdue(s) {
+    return s.status !== "REFUNDED" && daysSince(s.date) > OVERDUE_DAYS;
+  }
+  function statusLabel(s) {
+    if (s.status === "PENDING") return { text: "En attente", cls: "pending" };
+    if (s.status === "SECU_REFUNDED") return { text: "Sécu reçue", cls: "secu" };
+    return { text: "Remboursé", cls: "done" };
+  }
+
+  function computeHero() {
+    var rac = 0, refundedCount = 0;
+    soins.forEach(function (s) {
+      rac += Math.max(0, s.totalCents - s.secuPartCents - s.mutuellePartCents);
+      if (s.status === "REFUNDED") refundedCount++;
+    });
+    return { rac: rac, refundedCount: refundedCount, total: soins.length };
+  }
+
+  function computeBanner() {
+    var overdue = soins.filter(isOverdue);
+    var totalExpected = overdue.reduce(function (sum, s) { return sum + expectedRemaining(s); }, 0);
+    var maxDays = overdue.reduce(function (m, s) { return Math.max(m, daysSince(s.date)); }, 0);
+    return { count: overdue.length, totalExpected: totalExpected, maxDays: maxDays };
+  }
+
+  function renderHero() {
+    var h = computeHero();
+    document.getElementById("heroAmount").textContent = eur(h.rac);
+    var pct = h.total ? Math.round((h.refundedCount / h.total) * 100) : 0;
+    document.getElementById("heroProgress").style.width = pct + "%";
+    document.getElementById("heroSub").textContent =
+      h.total === 0 ? "Aucun soin enregistré" : h.refundedCount + " soin" + (h.refundedCount > 1 ? "s" : "") + " réglé" + (h.refundedCount > 1 ? "s" : "") + " sur " + h.total;
+  }
+
+  function renderBanner() {
+    var b = computeBanner();
+    var el = document.getElementById("alertBanner");
+    if (b.count === 0) { el.hidden = true; return; }
+    el.hidden = false;
+    document.getElementById("alertTitle").textContent =
+      b.count + " remboursement" + (b.count > 1 ? "s" : "") + " en retard";
+    document.getElementById("alertDetail").innerHTML =
+      "<b>" + eur(b.totalExpected) + "</b> en souffrance · le plus ancien : <b>" + b.maxDays + " j</b>";
+  }
+
+  function cardHTML(s) {
+    var chip = dateChip(s.date);
+    var st = statusLabel(s);
+    var overdue = isOverdue(s);
+    return (
+      '<button class="care-card" data-id="' + s.id + '">' +
+        '<div class="date-chip"><div class="d">' + chip.d + '</div><div class="m">' + chip.m + '</div></div>' +
+        '<div class="info">' +
+          '<p class="cat">' + s.category + '</p>' +
+          '<p class="meta">' + s.practitioner + ' · ' + s.beneficiary + '</p>' +
+        '</div>' +
+        '<div class="amt-col">' +
+          '<span class="amt">' + eur(s.totalCents) + '</span>' +
+          '<span class="pill ' + (overdue ? 'overdue-flag' : st.cls) + '"><span class="pdot"></span>' + (overdue ? daysSince(s.date) + ' j de retard' : st.text) + '</span>' +
+        '</div>' +
+      '</button>'
+    );
+  }
+
+  function renderList() {
+    var listEl = document.getElementById("careList");
+    var sorted = soins.slice().sort(function (a, b) { return b.date.localeCompare(a.date); });
+    document.getElementById("dashCount").textContent = sorted.length + " soin" + (sorted.length !== 1 ? "s" : "");
+    listEl.innerHTML = sorted.length
+      ? sorted.map(cardHTML).join("")
+      : '<div class="empty-state">Aucun soin pour le moment. Touchez + pour en ajouter un.</div>';
+  }
+
+  function renderUnpaid() {
+    var listEl = document.getElementById("unpaidList");
+    var overdue = soins.filter(isOverdue).sort(function (a, b) { return daysSince(b.date) - daysSince(a.date); });
+    listEl.innerHTML = overdue.length
+      ? overdue.map(cardHTML).join("")
+      : '<div class="empty-state">Aucun retard actuellement — tout est à jour.</div>';
+  }
+
+  function renderAll() { renderHero(); renderBanner(); renderList(); renderUnpaid(); }
+
+  // ---- Navigation ----
+  function showView(name) {
+    document.getElementById("dashboardView").hidden = name !== "dashboard";
+    document.getElementById("unpaidView").hidden = name !== "unpaid";
+  }
+  document.getElementById("relanceBtn").addEventListener("click", function () {
+    renderUnpaid();
+    showView("unpaid");
+  });
+  document.getElementById("backBtn").addEventListener("click", function () { showView("dashboard"); });
+
+  // ---- Explanations sheet ----
+  var sheetOverlay = document.getElementById("sheetOverlay");
+  var currentSheetId = null;
+
+  function openSheet(id) {
+    var s = soins.find(function (x) { return x.id === id; });
+    if (!s) return;
+    currentSheetId = id;
+    var chip = dateChip(s.date);
+    document.getElementById("sheetTitle").textContent = s.category + " — " + s.practitioner;
+    document.getElementById("sheetSub").textContent = chip.d + " " + chip.m + " · " + s.beneficiary;
+
+    var rac = Math.max(0, s.totalCents - s.secuPartCents - s.mutuellePartCents);
+    document.getElementById("sheetBreakdown").innerHTML =
+      '<div class="breakdown-row"><span>Montant payé</span><span>' + eur(s.totalCents) + '</span></div>' +
+      '<div class="breakdown-row"><span>Part Sécu attendue</span><span>' + eur(s.secuPartCents) + '</span></div>' +
+      '<div class="breakdown-row"><span>Part mutuelle attendue</span><span>' + eur(s.mutuellePartCents) + '</span></div>' +
+      '<div class="breakdown-row total"><span>Reste à votre charge</span><span>' + eur(rac) + '</span></div>';
+
+    var actionsEl = document.getElementById("sheetActions");
+    if (s.status === "REFUNDED") {
+      actionsEl.innerHTML = '<div class="all-done">✓ Entièrement remboursé</div>';
+    } else if (s.status === "SECU_REFUNDED") {
+      actionsEl.innerHTML = '<button class="primary" id="markAllReceived">✓ Tout reçu (mutuelle arrivée)</button>';
+    } else {
+      actionsEl.innerHTML =
+        '<button id="markSecuReceived">✓ Sécu reçue</button>' +
+        '<button class="primary" id="markAllReceived2">✓ Tout reçu</button>';
+    }
+    sheetOverlay.hidden = false;
+  }
+  function closeSheet() { sheetOverlay.hidden = true; currentSheetId = null; }
+  document.getElementById("sheetClose").addEventListener("click", closeSheet);
+  sheetOverlay.addEventListener("click", function (e) { if (e.target === sheetOverlay) closeSheet(); });
+
+  document.getElementById("sheetActions").addEventListener("click", function (e) {
+    var s = soins.find(function (x) { return x.id === currentSheetId; });
+    if (!s) return;
+    if (e.target.id === "markSecuReceived") {
+      s.status = "SECU_REFUNDED"; s.secuRefundedAt = todayISO();
+    } else if (e.target.id === "markAllReceived" || e.target.id === "markAllReceived2") {
+      s.status = "REFUNDED"; s.refundedAt = todayISO();
+      if (!s.secuRefundedAt) s.secuRefundedAt = todayISO();
+    } else { return; }
+    save(soins);
+    renderAll();
+    closeSheet();
+  });
+
+  document.body.addEventListener("click", function (e) {
+    var card = e.target.closest(".care-card");
+    if (card) openSheet(card.getAttribute("data-id"));
+  });
+
+  // ---- Add soin modal ----
+  var modalOverlay = document.getElementById("modalOverlay");
+  document.getElementById("fab").addEventListener("click", function () {
+    document.getElementById("f-date").value = todayISO();
+    modalOverlay.hidden = false;
+  });
+  document.getElementById("modalCancel").addEventListener("click", function () { modalOverlay.hidden = true; });
+  modalOverlay.addEventListener("click", function (e) { if (e.target === modalOverlay) modalOverlay.hidden = true; });
+
+  document.getElementById("addForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var total = Math.round(parseFloat(document.getElementById("f-total").value || "0") * 100);
+    var secu = Math.round(parseFloat(document.getElementById("f-secu").value || "0") * 100);
+    var mut = Math.round(parseFloat(document.getElementById("f-mut").value || "0") * 100);
+    soins.push({
+      id: uid(),
+      date: document.getElementById("f-date").value || todayISO(),
+      category: document.getElementById("f-cat").value,
+      practitioner: document.getElementById("f-prat").value || "Praticien",
+      beneficiary: document.getElementById("f-benef").value || "Vous",
+      totalCents: total, secuPartCents: secu, mutuellePartCents: mut,
+      status: "PENDING", secuRefundedAt: null, refundedAt: null, createdAt: todayISO()
+    });
+    save(soins);
+    renderAll();
+    e.target.reset();
+    modalOverlay.hidden = true;
+  });
+
+  renderAll();
+})();
+</script>
