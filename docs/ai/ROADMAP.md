@@ -2,13 +2,15 @@
 
 > Priorités identifiées, pas un backlog exhaustif. Réordonné à chaque cycle si l'impact/effort/risque change.
 
-## Priorité 1 — Fiabilité du cœur métier
+## Fait — 2026-08-04
 
-- Ajouter des tests unitaires sur `lib/reimbursementEngine.ts` (aucun framework de test configuré actuellement). C'est le code qui calcule de l'argent réel pour l'utilisateur — le plus haut risque du projet en l'absence de tests.
+- ✅ Ajout de `jest-expo` + 10 tests unitaires sur `lib/reimbursementEngine.ts` (`estimateReimbursement`, `computeGuaranteeUsage`, `isReimbursementOverdue`, `buildCoverageDiagnostic`). `npm test` disponible.
+- ✅ Commit du fix de validation de schéma dans `context/ReimbursementContext.tsx`.
 
-## Priorité 2 — Commit du travail en cours
+## Priorité 1 — Étendre la couverture de tests
 
-- Committer le fix de validation de schéma dans `context/ReimbursementContext.tsx` (actuellement en modification non commitée).
+- `getExpiringGuarantees` et `generateReimbursementPdf.ts` ne sont pas encore couverts.
+- Les tests actuels ne couvrent que `lib/`. Aucun test sur les contexts (`AsyncStorage`) ni les écrans.
 
 ## À surveiller / vérifier (pas encore des bugs confirmés)
 

@@ -8,3 +8,9 @@
 - Suppression du dossier dupliqué `rembourse-moi/rembourse-moi/` (clone imbriqué non tracké, 3 commits en retard sur le repo principal, même remote, aucun travail unique — vérifié avant suppression)
 - Mise en place du système de mémoire IA (`docs/ai/`) et des règles permanentes (`AGENTS.md`)
 - Ajout des scripts `scripts/ai/` (audit, qualité, tests, rapport)
+
+## 2026-08-04 — Premier cycle autonome : tests sur le moteur de calcul
+
+- Ajout de `jest-expo`/`jest`/`@types/jest` (`npx expo install --dev`, versions SDK 54)
+- `package.json` : script `test`, config `jest.preset = jest-expo`
+- 10 tests unitaires sur `lib/reimbursementEngine.ts` — tous verts, `tsc --noEmit` et `expo lint` propres
