@@ -20,3 +20,10 @@
 - Suite à l'audit "Phase 1" : ces deux fonctions alimentent l'alerte fin d'année de l'écran d'accueil (`app/(tabs)/index.tsx`) et n'avaient aucun test — plus haut risque financier identifié (perte de garanties non consommées avant le 31/12).
 - 10 nouveaux tests ajoutés dans `lib/reimbursementEngine.test.ts` (aucune modification de `lib/reimbursementEngine.ts`) : garantie avec reste disponible incluse (montant et séances), garantie épuisée exclue (montant et séances), `capType: 'none'` exclue, remboursement `pending` ne réduit pas le restant, filtrage correct sur un contrat mixte à 5 garanties, `daysUntilYearEnd` avec date injectée (31 décembre, 1er janvier, 3 jours avant la fin).
 - Suite complète : 20/20 tests verts, `tsc --noEmit` et `expo lint` propres, aucune régression sur les 10 tests précédents.
+
+## 2026-08-04 — Troisième cycle autonome : couverture de `buildCoverageDiagnostic` et `isReimbursementOverdue`
+
+- Suite à l'audit ciblé : verrouillage de branches métier jamais testées — `capType: 'sessions'` (calcul et agrégation), verdict par défaut `adaptee`, frontières exactes des seuils (0.9 et 0.2), et la limite exacte de `isReimbursementOverdue` (J+10 vs J+11) + paramètre `thresholdDays` personnalisé.
+- 8 nouveaux tests dans `lib/reimbursementEngine.test.ts` (aucune modification de `lib/reimbursementEngine.ts`).
+- Suite complète : 28/28 tests verts, `tsc --noEmit` et `expo lint` propres, aucune régression.
+- Point trouvé pendant l'audit mais volontairement **non testé** (aurait figé un comportement potentiellement incorrect) : traitement de `capAmount`/`capSessions === 0` dans `buildCoverageDiagnostic` — voir `DECISIONS.md`, en attente de décision de Jean.

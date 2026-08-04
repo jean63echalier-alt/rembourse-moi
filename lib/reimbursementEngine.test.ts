@@ -5,6 +5,7 @@ import {
   estimateReimbursement,
   getExpiringGuarantees,
   isReimbursementOverdue,
+  RELANCE_DELAY_DAYS,
 } from './reimbursementEngine';
 import type { FamilyMember, GuaranteeLine, Reimbursement } from '@/types';
 
@@ -120,6 +121,28 @@ describe('isReimbursementOverdue', () => {
     const r = makeReimbursement({ status: 'reimbursed', date: oldDate.toISOString() });
     expect(isReimbursementOverdue(r)).toBe(false);
   });
+
+  it("n'est pas encore en retard à exactement J+10 (seuil non atteint, comparaison stricte)", () => {
+    const now = new Date(2025, 5, 15, 12, 0, 0);
+    const date = new Date(now.getTime() - RELANCE_DELAY_DAYS * 24 * 60 * 60 * 1000);
+    const r = makeReimbursement({ status: 'pending', date: date.toISOString() });
+    expect(isReimbursementOverdue(r, RELANCE_DELAY_DAYS, now)).toBe(false);
+  });
+
+  it('est en retard à J+11 (un jour au-delà du seuil de 10 jours)', () => {
+    const now = new Date(2025, 5, 15, 12, 0, 0);
+    const date = new Date(now.getTime() - (RELANCE_DELAY_DAYS + 1) * 24 * 60 * 60 * 1000);
+    const r = makeReimbursement({ status: 'pending', date: date.toISOString() });
+    expect(isReimbursementOverdue(r, RELANCE_DELAY_DAYS, now)).toBe(true);
+  });
+
+  it('respecte un thresholdDays personnalisé au lieu du délai par défaut', () => {
+    const now = new Date(2025, 5, 15, 12, 0, 0);
+    const date = new Date(now.getTime() - 4 * 24 * 60 * 60 * 1000);
+    const r = makeReimbursement({ status: 'pending', date: date.toISOString() });
+    expect(isReimbursementOverdue(r, 3, now)).toBe(true);
+    expect(isReimbursementOverdue(r, 5, now)).toBe(false);
+  });
 });
 
 describe('buildCoverageDiagnostic', () => {
@@ -134,6 +157,54 @@ describe('buildCoverageDiagnostic', () => {
     const member = makeMember([makeGuarantee({ capAmount: 1000 })]);
     const reimbursements = [makeReimbursement({ amount: 50, reimbursedAmount: 35 })];
     const [line] = buildCoverageDiagnostic(member, reimbursements);
+    expect(line.verdict).toBe('sur-couverture');
+  });
+
+  it('calcule pctUsed pour capType sessions comme forCategory.length / capSessions, en agrégeant plusieurs remboursements', () => {
+    const member = makeMember([makeGuarantee({ capType: 'sessions', capAmount: undefined, capSessions: 5 })]);
+    const reimbursements = [
+      makeReimbursement({ id: 'r1' }),
+      makeReimbursement({ id: 'r2' }),
+      makeReimbursement({ id: 'r3' }),
+    ];
+    const [line] = buildCoverageDiagnostic(member, reimbursements);
+    expect(line.pctUsed).toBe(0.6);
+    expect(line.capSessions).toBe(5);
+  });
+
+  it("compte un remboursement 'pending' dans le calcul en séances, pas seulement les 'reimbursed' (règle actuelle : dépense réelle, tous statuts confondus)", () => {
+    const member = makeMember([makeGuarantee({ capType: 'sessions', capAmount: undefined, capSessions: 2 })]);
+    const reimbursements = [
+      makeReimbursement({ status: 'reimbursed' }),
+      makeReimbursement({ status: 'pending', reimbursedAmount: 0 }),
+    ];
+    const [line] = buildCoverageDiagnostic(member, reimbursements);
+    // Si seuls les "reimbursed" comptaient, pctUsed serait 0.5 (adaptee). Les 2 comptent ici → 1 (sous-couverture).
+    expect(line.pctUsed).toBe(1);
+    expect(line.verdict).toBe('sous-couverture');
+  });
+
+  it("verdict par défaut 'adaptee' pour une consommation ni trop haute ni trop basse", () => {
+    const member = makeMember([makeGuarantee({ capAmount: 100 })]);
+    const reimbursements = [makeReimbursement({ amount: 50, reimbursedAmount: 35 })];
+    const [line] = buildCoverageDiagnostic(member, reimbursements);
+    expect(line.verdict).toBe('adaptee');
+    expect(line.message).toBe('Votre garantie actuelle correspond bien à votre consommation.');
+  });
+
+  it('pctUsed exactement égal à 0.9 déclenche la sous-couverture (seuil inclusif)', () => {
+    const member = makeMember([makeGuarantee({ capAmount: 100 })]);
+    const reimbursements = [makeReimbursement({ amount: 90, reimbursedAmount: 63 })];
+    const [line] = buildCoverageDiagnostic(member, reimbursements);
+    expect(line.pctUsed).toBe(0.9);
+    expect(line.verdict).toBe('sous-couverture');
+  });
+
+  it('pctUsed exactement égal à 0.2 déclenche la sur-couverture (seuil inclusif)', () => {
+    const member = makeMember([makeGuarantee({ capAmount: 1000 })]);
+    const reimbursements = [makeReimbursement({ amount: 200, reimbursedAmount: 140 })];
+    const [line] = buildCoverageDiagnostic(member, reimbursements);
+    expect(line.pctUsed).toBe(0.2);
     expect(line.verdict).toBe('sur-couverture');
   });
 });
