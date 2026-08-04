@@ -1,7 +1,9 @@
 import {
   buildCoverageDiagnostic,
   computeGuaranteeUsage,
+  daysUntilYearEnd,
   estimateReimbursement,
+  getExpiringGuarantees,
   isReimbursementOverdue,
 } from './reimbursementEngine';
 import type { FamilyMember, GuaranteeLine, Reimbursement } from '@/types';
@@ -133,5 +135,98 @@ describe('buildCoverageDiagnostic', () => {
     const reimbursements = [makeReimbursement({ amount: 50, reimbursedAmount: 35 })];
     const [line] = buildCoverageDiagnostic(member, reimbursements);
     expect(line.verdict).toBe('sur-couverture');
+  });
+});
+
+describe('getExpiringGuarantees', () => {
+  const dentaire = makeGuarantee({ id: 'g-dentaire', category: 'Dentaire', capType: 'amount', capAmount: 100 });
+  const optique = makeGuarantee({ id: 'g-optique', category: 'Optique', capType: 'amount', capAmount: 50 });
+  const kine = makeGuarantee({ id: 'g-kine', category: 'Kine', capType: 'sessions', capAmount: undefined, capSessions: 3 });
+  const osteo = makeGuarantee({ id: 'g-osteo', category: 'Osteopathie', capType: 'sessions', capAmount: undefined, capSessions: 2 });
+  const consultation = makeGuarantee({ id: 'g-conso', category: 'Consultation', capType: 'none', capAmount: undefined });
+
+  it('inclut une garantie (plafond en montant) avec du reste disponible, avec le bon montant restant', () => {
+    const member = makeMember([dentaire]);
+    const reimbursements = [makeReimbursement({ category: 'Dentaire', reimbursedAmount: 40 })];
+    const result = getExpiringGuarantees(member, reimbursements);
+    expect(result).toHaveLength(1);
+    expect(result[0].guarantee.category).toBe('Dentaire');
+    expect(result[0].usage.remainingAmount).toBe(60);
+  });
+
+  it('inclut une garantie (plafond en séances) avec du reste disponible, avec le bon nombre de séances restantes', () => {
+    const member = makeMember([kine]);
+    const reimbursements = [
+      makeReimbursement({ category: 'Kine' }),
+      makeReimbursement({ category: 'Kine' }),
+    ];
+    const result = getExpiringGuarantees(member, reimbursements);
+    expect(result).toHaveLength(1);
+    expect(result[0].guarantee.category).toBe('Kine');
+    expect(result[0].usage.remainingSessions).toBe(1);
+  });
+
+  it('exclut une garantie (montant) entièrement consommée', () => {
+    const member = makeMember([optique]);
+    const reimbursements = [makeReimbursement({ category: 'Optique', reimbursedAmount: 50 })];
+    const result = getExpiringGuarantees(member, reimbursements);
+    expect(result).toHaveLength(0);
+  });
+
+  it('exclut une garantie (séances) entièrement consommée', () => {
+    const member = makeMember([osteo]);
+    const reimbursements = [
+      makeReimbursement({ category: 'Osteopathie' }),
+      makeReimbursement({ category: 'Osteopathie' }),
+    ];
+    const result = getExpiringGuarantees(member, reimbursements);
+    expect(result).toHaveLength(0);
+  });
+
+  it("exclut une garantie sans plafond exploitable (capType 'none'), même sans consommation", () => {
+    const member = makeMember([consultation]);
+    const result = getExpiringGuarantees(member, []);
+    expect(result).toHaveLength(0);
+  });
+
+  it("n'exclut pas une garantie sur la base d'un remboursement encore en attente (pending ne consomme pas le plafond)", () => {
+    const member = makeMember([optique]);
+    const reimbursements = [makeReimbursement({ category: 'Optique', status: 'pending', reimbursedAmount: 0 })];
+    const result = getExpiringGuarantees(member, reimbursements);
+    expect(result).toHaveLength(1);
+    expect(result[0].usage.remainingAmount).toBe(50);
+  });
+
+  it('ne retient que les garanties encore exploitables parmi un contrat mixte', () => {
+    const member = makeMember([dentaire, optique, kine, osteo, consultation]);
+    const reimbursements = [
+      makeReimbursement({ category: 'Dentaire', reimbursedAmount: 40 }), // reste 60 → inclus
+      makeReimbursement({ category: 'Optique', reimbursedAmount: 50 }), // reste 0 → exclu
+      makeReimbursement({ category: 'Kine' }),
+      makeReimbursement({ category: 'Kine' }), // reste 1 séance → inclus
+      makeReimbursement({ category: 'Osteopathie' }),
+      makeReimbursement({ category: 'Osteopathie' }), // reste 0 séance → exclu
+      // Consultation (capType 'none') : toujours exclue, aucun remboursement nécessaire
+    ];
+    const result = getExpiringGuarantees(member, reimbursements);
+    expect(result.map((r) => r.guarantee.category).sort()).toEqual(['Dentaire', 'Kine']);
+  });
+});
+
+describe('daysUntilYearEnd', () => {
+  it('renvoie 0 le 31 décembre (date injectée, indépendante de la date système)', () => {
+    const now = new Date(2025, 11, 31);
+    expect(daysUntilYearEnd(now)).toBe(0);
+  });
+
+  it('renvoie une valeur proche de la fin quand on est le 1er janvier', () => {
+    const now = new Date(2025, 0, 1);
+    // 2025 n'est pas bissextile : du 1er janvier au 31 décembre il y a 364 jours pleins.
+    expect(daysUntilYearEnd(now)).toBe(364);
+  });
+
+  it('calcule correctement quelques jours avant la fin de l\'année', () => {
+    const now = new Date(2025, 11, 28);
+    expect(daysUntilYearEnd(now)).toBe(3);
   });
 });
