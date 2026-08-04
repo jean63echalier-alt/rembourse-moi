@@ -7,6 +7,22 @@ import type { FamilyMember, Reimbursement } from '@/types';
 const FAMILY_KEY = '@remboursemoi/familyMembers';
 const REIMBURSEMENTS_KEY = '@remboursemoi/reimbursements';
 
+// Le schéma de FamilyMember a évolué (ajout de `contract`) : un cache écrit par une
+// version antérieure de l'app n'a pas ce champ et fait planter le moteur de calcul.
+// On vérifie la forme avant de faire confiance aux données stockées.
+function isValidFamilyMembers(data: unknown): data is FamilyMember[] {
+  return (
+    Array.isArray(data) &&
+    data.every(
+      (m) =>
+        m &&
+        typeof m === 'object' &&
+        m.contract &&
+        Array.isArray(m.contract.guarantees)
+    )
+  );
+}
+
 interface ReimbursementContextValue {
   familyMembers: FamilyMember[];
   addFamilyMember: (member: Omit<FamilyMember, 'id'>) => void;
@@ -31,7 +47,10 @@ export function ReimbursementProvider({ children }: { children: React.ReactNode 
           AsyncStorage.getItem(FAMILY_KEY),
           AsyncStorage.getItem(REIMBURSEMENTS_KEY),
         ]);
-        if (storedFamily) setFamilyMembers(JSON.parse(storedFamily));
+        if (storedFamily) {
+          const parsedFamily = JSON.parse(storedFamily);
+          if (isValidFamilyMembers(parsedFamily)) setFamilyMembers(parsedFamily);
+        }
         if (storedReimbursements) setReimbursements(JSON.parse(storedReimbursements));
       } catch {
         // pas de données locales valides, on garde les valeurs mock par défaut
