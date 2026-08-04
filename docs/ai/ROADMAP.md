@@ -9,7 +9,10 @@
 
 ## Priorité 1 — Étendre la couverture de tests
 
-- `getExpiringGuarantees` et `generateReimbursementPdf.ts` ne sont pas encore couverts.
+- Tester `getExpiringGuarantees` (alertes plafond en fin d'année) — non couvert, utilisé pour les relances utilisateur.
+- Tester `daysUntilYearEnd` — non couvert, base de calcul des alertes de fin d'année.
+- Tester le verdict par défaut `adaptee` de `buildCoverageDiagnostic` — seuls les verdicts `sur-couverture`/`sous-couverture` sont couverts actuellement, le cas nominal ne l'est pas.
+- `generateReimbursementPdf.ts` non couvert.
 - Les tests actuels ne couvrent que `lib/`. Aucun test sur les contexts (`AsyncStorage`) ni les écrans.
 
 ## À surveiller / vérifier (pas encore des bugs confirmés)
